@@ -67,6 +67,10 @@ def submit_candidate():
         if 'documents[]' in request.files:
             files['documents[]'] = request.files.getlist('documents[]')
 
+        # Handle document descriptions (array)
+        if 'document_descriptions[]' in request.form:
+            form_data['document_descriptions[]'] = request.form.getlist('document_descriptions[]')
+
         # Validate is_declared_true
         if form_data.get('is_declared_true', '').lower() not in ['true', '1', 'yes']:
             return jsonify({

@@ -1,5 +1,5 @@
 from app import db
-from app.models.candidate import RCECandidate, RCECanAddr, RCCanEdu, CanCardId, CanExpQuestId, RCECanExperience, RCECanJobExpected
+from app.models.candidate import RCECandidate, RCECanAddr, RCCanEdu, CanCardId, CanExpQuestId, RCECanExperience, RCECanJobExpected, RCECanPhoto, RCECanDocument
 from app.models.maritalstatus import PMMaritalSt
 from app.models.city import PMCity
 from app.models.state import PMState
@@ -261,10 +261,17 @@ class CandidateService:
                 city_name = CandidateService.resolve_city_name(city_id)
                 state_name = CandidateService.resolve_state_name(province_id)
 
-                # 8. Generate candidate code
+                # 8. Query VacantPos to get OrgRecId for CanOrgId
+                vacant_pos = RCEVacantPos.query.filter_by(VacantPosId=int(job_id)).first()
+                if not vacant_pos:
+                    raise ValueError(f"Vacant position with ID {job_id} not found")
+
+                org_rec_id = vacant_pos.OrgRecId
+
+                # 9. Generate candidate code
                 can_code = CandidateService.generate_candidate_code()
 
-                # 9. Create RCECandidate with safe string truncation
+                # 10. Create RCECandidate with safe string truncation
                 now = datetime.now()
                 candidate = RCECandidate(
                     CanCode=CandidateService.safe_string(can_code, 15),  # YYMM.NNNNN format
@@ -283,22 +290,35 @@ class CandidateService:
                     CanEntryDate=now,
                     CanApplyDate=now,
                     CanAdvId=int(job_id),
+                    CanOrgId=org_rec_id,  # Set from RCEVacantPos.OrgRecId
                     CanSource=None,  # Set to NULL as per requirement
                     UpdDate=now,
                     UpdUser=CandidateService.safe_string(can_code, 15),  # Use candidate_code
                     UpdFlag=CandidateService.safe_string('I', 1)
                 )
 
-                # Handle photo upload
-                if 'photo' in files and files['photo'] and files['photo'].filename:
-                    photo_path = CandidateService.save_file(files['photo'], 'uploads/photos')
-                    # Store photo path in appropriate field if needed
-
                 # Debug: Log all field lengths before insert
                 CandidateService.log_model_fields(candidate, "RCECandidate")
 
                 db.session.add(candidate)
                 db.session.flush()  # Get CanId
+
+                # Handle photo upload - Save as BLOB in RCECanPhoto table
+                if 'photo' in files and files['photo'] and files['photo'].filename:
+                    photo_file = files['photo']
+                    # Read photo as binary data
+                    photo_binary = photo_file.read()
+
+                    # Create RCECanPhoto record
+                    can_photo = RCECanPhoto(
+                        CanId=candidate.CanId,
+                        CanPhoto=photo_binary,
+                        FgDefault=CandidateService.safe_string('Y', 1),  # Set as default photo
+                        UpdDate=now,
+                        UpdUser=CandidateService.safe_string(can_code, 15),
+                        Updflag=CandidateService.safe_string('I', 1)
+                    )
+                    db.session.add(can_photo)
 
                 # 10. Create RCECanAddr with safe string truncation
                 can_addr = RCECanAddr(
@@ -368,11 +388,7 @@ class CandidateService:
                         db.session.add(can_card)
 
                 # 12.1. Create RCECanJobExpected - Posisi yang dilamar
-                # Query VacantPos to get VacantPosCode
-                vacant_pos = RCEVacantPos.query.filter_by(VacantPosId=int(job_id)).first()
-                if not vacant_pos:
-                    raise ValueError(f"Vacant position with ID {job_id} not found")
-
+                # Use vacant_pos from earlier query (Step 8)
                 # Query ODPosition to get PositionId using VacantPosCode
                 position = ODPosition.query.filter_by(PosCode=vacant_pos.VacantPosCode).first()
                 if not position:
@@ -625,19 +641,47 @@ class CandidateService:
 
                     db.session.add(can_answer)
 
-                # 14. Handle document uploads
+                # 14. Handle document uploads - Save as BLOB in RCECanDocument table
                 if 'documents[]' in files:
                     documents = files.get('documents[]', [])
                     if not isinstance(documents, list):
                         documents = [documents]
 
-                    # Document descriptions should be passed as JSON string or separate in form
-                    # For now, just save the documents
+                    # Get document descriptions if provided
+                    doc_descriptions = form_data.get('document_descriptions[]', [])
+
+                    # Handle different formats: list (from getlist), JSON string, or empty
+                    if not isinstance(doc_descriptions, list):
+                        if doc_descriptions:
+                            try:
+                                # If it's a JSON string, parse it
+                                doc_descriptions = json.loads(doc_descriptions)
+                            except (json.JSONDecodeError, ValueError):
+                                doc_descriptions = []
+                        else:
+                            doc_descriptions = []
+
+                    # Save each document as BLOB
                     for idx, doc in enumerate(documents):
                         if doc and doc.filename:
-                            doc_path = CandidateService.save_file(doc, 'uploads/documents')
-                            # Store document path and description as needed
-                            # This might require additional table or field in candidate
+                            # Read document as binary data
+                            doc_binary = doc.read()
+
+                            # Get description for this document
+                            doc_desc = doc_descriptions[idx] if idx < len(doc_descriptions) else None
+
+                            # Create RCECanDocument record
+                            can_doc = RCECanDocument(
+                                CanId=candidate.CanId,
+                                CanDocDesc=CandidateService.safe_string(doc_desc, 200) if doc_desc else None,
+                                CanDocFile=CandidateService.safe_string(secure_filename(doc.filename), 200),
+                                CanDoc=doc_binary,
+                                CanDocTypeId=None,  # Set to None unless document type is provided
+                                UpdDate=now,
+                                UpdUser=CandidateService.safe_string(can_code, 15),
+                                UpdFlag=CandidateService.safe_string('I', 1)
+                            )
+                            db.session.add(can_doc)
 
                 # 15. Commit transaction
                 db.session.commit()

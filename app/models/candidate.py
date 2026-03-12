@@ -289,3 +289,45 @@ class RCECanJobExpected(db.Model):
 
     def __repr__(self):
         return f"<RCECanJobExpected CanId={self.CanId} PositionId={self.PositionId}>"
+
+
+class RCECanPhoto(db.Model):
+    """
+    Model untuk tabel RCECanPhoto - Foto Kandidat
+    IMPORTANT: Foto disimpan sebagai BLOB dalam database
+    """
+    __tablename__ = "RCECanPhoto"
+    __table_args__ = {'schema': 'dbo'}
+
+    CanPhotoId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    CanId = db.Column(db.Integer, db.ForeignKey('dbo.RCECandidate.CanId'), nullable=False)
+    CanPhoto = db.Column(db.LargeBinary, nullable=False)  # BLOB untuk menyimpan foto
+    FgDefault = db.Column(db.String(1))  # Flag default ('Y' untuk foto utama, 'N' untuk foto lainnya)
+    UpdDate = db.Column(db.DateTime)
+    UpdUser = db.Column(db.String(15))
+    Updflag = db.Column(db.String(1))  # 'I' = Insert, 'U' = Update, 'D' = Delete
+
+    def __repr__(self):
+        return f"<RCECanPhoto CanPhotoId={self.CanPhotoId} CanId={self.CanId}>"
+
+
+class RCECanDocument(db.Model):
+    """
+    Model untuk tabel RCECanDocument - Dokumen Kandidat
+    IMPORTANT: Dokumen disimpan sebagai BLOB dalam database
+    """
+    __tablename__ = "RCECanDocument"
+    __table_args__ = {'schema': 'dbo'}
+
+    CanDocId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    CanId = db.Column(db.Integer, db.ForeignKey('dbo.RCECandidate.CanId'), nullable=False)
+    CanDocDesc = db.Column(db.String(200))  # Deskripsi dokumen
+    CanDocFile = db.Column(db.String(200))  # Nama file asli
+    CanDoc = db.Column(db.LargeBinary, nullable=False)  # BLOB untuk menyimpan dokumen
+    CanDocTypeId = db.Column(db.Integer)  # ID tipe dokumen (jika ada)
+    UpdDate = db.Column(db.DateTime)
+    UpdUser = db.Column(db.String(15))
+    UpdFlag = db.Column(db.String(1))  # 'I' = Insert, 'U' = Update, 'D' = Delete
+
+    def __repr__(self):
+        return f"<RCECanDocument CanDocId={self.CanDocId} CanId={self.CanId}>"

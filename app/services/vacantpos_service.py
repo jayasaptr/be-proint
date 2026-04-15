@@ -22,8 +22,8 @@ class VacantPosService:
             sort_by (str): Field to sort by (default: "VacantPositionName")
             sort_order (str): Sort order "asc" or "desc" (default: "asc")
             search (str): Search by position name or code (default: "")
-            posadt_grp_id (int): Filter by PosAdtGrpId (optional)
-            posadt_type_id (int): Filter by PosAdtTypeId (optional)
+            posadt_grp_id (list): Filter by PosAdtGrpId (optional, can be multiple, uses AND logic - all must match)
+            posadt_type_id (list): Filter by PosAdtTypeId (optional, can be multiple, uses AND logic - all must match)
             include_relations (bool): Include related position audit group data (default: False)
             exclude_expired (bool): Exclude vacancies with VacantExpDate < current date (default: True)
 
@@ -60,17 +60,25 @@ class VacantPosService:
                 )
 
             # Filter by PosAdtGrpId or PosAdtTypeId if provided
+            # Using subquery to ensure ALL conditions are met (AND logic)
             if posadt_grp_id or posadt_type_id:
-                query = query.join(
-                    RCEPosAdtGrpMbr,
-                    RCEVacantPos.VacantPosId == RCEPosAdtGrpMbr.VacantPosId
-                )
+                subquery_filters = []
 
+                # For each posadt_grp_id, create a subquery to check if vacancy has that group
                 if posadt_grp_id:
-                    query = query.filter(RCEPosAdtGrpMbr.PosAdtGrpId == posadt_grp_id)
+                    for grp_id in posadt_grp_id:
+                        subq = db.session.query(RCEPosAdtGrpMbr.VacantPosId).filter(
+                            RCEPosAdtGrpMbr.PosAdtGrpId == grp_id
+                        )
+                        query = query.filter(RCEVacantPos.VacantPosId.in_(subq))
 
+                # For each posadt_type_id, create a subquery to check if vacancy has that type
                 if posadt_type_id:
-                    query = query.filter(RCEPosAdtGrpMbr.PosAdtTypeId == posadt_type_id)
+                    for type_id in posadt_type_id:
+                        subq = db.session.query(RCEPosAdtGrpMbr.VacantPosId).filter(
+                            RCEPosAdtGrpMbr.PosAdtTypeId == type_id
+                        )
+                        query = query.filter(RCEVacantPos.VacantPosId.in_(subq))
 
             # Search filter
             if search:

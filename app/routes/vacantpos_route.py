@@ -16,8 +16,8 @@ def get_all_vacancies():
         - sort_by: Field to sort by (default: "VacantPositionName")
         - sort_order: Sort order "asc" or "desc" (default: "asc")
         - search: Search by position name or code (optional)
-        - posadt_grp_id: Filter by PosAdtGrpId (optional)
-        - posadt_type_id: Filter by PosAdtTypeId (optional)
+        - posadt_grp_id: Filter by PosAdtGrpId (optional, can be multiple: ?posadt_grp_id=1&posadt_grp_id=2, uses AND logic - all must match)
+        - posadt_type_id: Filter by PosAdtTypeId (optional, can be multiple: ?posadt_type_id=1&posadt_type_id=2, uses AND logic - all must match)
         - include_relations: Include related position audit group data "true" or "false" (default: "false")
         - exclude_expired: Exclude vacancies with VacantExpDate < current date "true" or "false" (default: "true")
     """
@@ -28,8 +28,8 @@ def get_all_vacancies():
         sort_by = request.args.get("sort_by", "VacantPositionName")
         sort_order = request.args.get("sort_order", "asc")
         search = request.args.get("search", "")
-        posadt_grp_id = request.args.get("posadt_grp_id", type=int)
-        posadt_type_id = request.args.get("posadt_type_id", type=int)
+        posadt_grp_id = request.args.getlist("posadt_grp_id", type=int)
+        posadt_type_id = request.args.getlist("posadt_type_id", type=int)
         include_relations = request.args.get("include_relations", "false").lower() == "true"
         exclude_expired = request.args.get("exclude_expired", "true").lower() == "true"
 

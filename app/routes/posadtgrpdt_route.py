@@ -16,7 +16,7 @@ def get_all_posadtgrpdt():
         - sort_order: Sort order "asc" or "desc" (default: "asc")
         - search: Search by name or code (optional)
         - include_header: Include related header data "true" or "false" (default: "false")
-        - posadt_type_id: Filter by PosAdtTypeId (optional)
+        - posadt_type_id: Filter by PosAdtTypeId (optional, can be multiple: ?posadt_type_id=1&posadt_type_id=2)
     """
     try:
         # Get query parameters
@@ -26,7 +26,7 @@ def get_all_posadtgrpdt():
         sort_order = request.args.get("sort_order", "asc")
         search = request.args.get("search", "")
         include_header = request.args.get("include_header", "false").lower() == "true"
-        posadt_type_id = request.args.get("posadt_type_id", type=int)
+        posadt_type_id = request.args.getlist("posadt_type_id", type=int)
 
         # Validate per_page
         if per_page > 500:

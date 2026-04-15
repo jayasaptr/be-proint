@@ -18,7 +18,7 @@ class PosAdtGrpDtService:
             sort_order (str): Sort order "asc" or "desc" (default: "asc")
             search (str): Search by name or code (default: "")
             include_header (bool): Include related header data (default: False)
-            posadt_type_id (int): Filter by PosAdtTypeId (optional)
+            posadt_type_id (list): Filter by PosAdtTypeId (optional, can be multiple)
 
         Returns:
             dict: Paginated position audit group detail data
@@ -32,7 +32,7 @@ class PosAdtGrpDtService:
 
             # Filter by PosAdtTypeId if provided
             if posadt_type_id:
-                query = query.filter(RCEPosAdtGrpDt.PosAdtTypeId == posadt_type_id)
+                query = query.filter(RCEPosAdtGrpDt.PosAdtTypeId.in_(posadt_type_id))
 
             # Search filter
             if search:

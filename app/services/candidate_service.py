@@ -80,6 +80,20 @@ class CandidateService:
         return f"{year_month}.{new_sequence:05d}"
 
     @staticmethod
+    def captcha_enabled():
+        """
+        Feature flag to enable/disable captcha verification.
+
+        Controlled by CAPTCHA_ENABLED in .env (default: true so behavior stays
+        secure if the flag is missing). Set to false to temporarily hide the
+        captcha function without removing any code.
+
+        Returns:
+            bool: True if captcha is enabled, False if disabled
+        """
+        return os.getenv('CAPTCHA_ENABLED', 'true').strip().lower() in ('true', '1', 'yes')
+
+    @staticmethod
     def verify_captcha(token, secret_key=None):
         """
         Verify Cloudflare Turnstile captcha token
@@ -91,6 +105,10 @@ class CandidateService:
         Returns:
             bool: True if valid, False otherwise
         """
+        # Captcha disabled via feature flag — skip verification entirely
+        if not CandidateService.captcha_enabled():
+            return True
+
         if not secret_key:
             # Get from environment or config
             secret_key = os.getenv('TURNSTILE_SECRET_KEY', '')

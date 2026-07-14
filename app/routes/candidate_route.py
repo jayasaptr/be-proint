@@ -241,6 +241,17 @@ def get_captcha_config():
         200: Captcha configuration with site key
     """
     try:
+        # Captcha disabled via feature flag — tell frontend to skip the widget
+        if not CandidateService.captcha_enabled():
+            return jsonify({
+                "success": True,
+                "data": {
+                    "enabled": False,
+                    "site_key": None,
+                    "provider": "cloudflare_turnstile"
+                }
+            }), 200
+
         site_key = os.getenv('TURNSTILE_SITE_KEY', '')
 
         if not site_key:
@@ -252,6 +263,7 @@ def get_captcha_config():
         return jsonify({
             "success": True,
             "data": {
+                "enabled": True,
                 "site_key": site_key,
                 "provider": "cloudflare_turnstile"
             }

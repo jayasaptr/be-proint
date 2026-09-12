@@ -16,10 +16,13 @@ def get_all_vacancies():
         - sort_by: Field to sort by (default: "VacantPositionName")
         - sort_order: Sort order "asc" or "desc" (default: "asc")
         - search: Search by position name or code (optional)
-        - posadt_grp_id: Filter by PosAdtGrpId (optional, can be multiple: ?posadt_grp_id=1&posadt_grp_id=2, uses AND logic - all must match)
-        - posadt_type_id: Filter by PosAdtTypeId (optional, can be multiple: ?posadt_type_id=1&posadt_type_id=2, uses AND logic - all must match)
+        - posadt_grp_id: Filter by PosAdtGrpId (optional, can be multiple: ?posadt_grp_id=1&posadt_grp_id=2).
+          OR within the same category (PosAdtTypeId), AND across categories.
+        - posadt_type_id: Filter by PosAdtTypeId (optional, can be multiple: ?posadt_type_id=1&posadt_type_id=2).
+          Vacancy must have at least one attribute of any selected type (OR).
         - include_relations: Include related position audit group data "true" or "false" (default: "false")
         - exclude_expired: Exclude vacancies with VacantExpDate < current date "true" or "false" (default: "true")
+        - ftap_first: Put FTAP vacancies at the top before sort_by "true" or "false" (default: "true")
     """
     try:
         # Get query parameters
@@ -32,6 +35,7 @@ def get_all_vacancies():
         posadt_type_id = request.args.getlist("posadt_type_id", type=int)
         include_relations = request.args.get("include_relations", "false").lower() == "true"
         exclude_expired = request.args.get("exclude_expired", "true").lower() == "true"
+        ftap_first = request.args.get("ftap_first", "true").lower() == "true"
 
         # Validate per_page
         if per_page > 500:
@@ -47,7 +51,8 @@ def get_all_vacancies():
             posadt_grp_id=posadt_grp_id,
             posadt_type_id=posadt_type_id,
             include_relations=include_relations,
-            exclude_expired=exclude_expired
+            exclude_expired=exclude_expired,
+            ftap_first=ftap_first
         )
 
         if result["success"]:

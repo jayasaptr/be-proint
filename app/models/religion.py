@@ -13,7 +13,8 @@ class PMReligion(db.Model):
     UpdDate = db.Column(db.DateTime)
     UpdUser = db.Column(db.String(50))
     UpdFlag = db.Column(db.String(10))
-    ExportDate = db.Column(db.DateTime)
+    # NOTE: PMReligion di HRIS tidak punya kolom ExportDate. Mendeklarasikannya
+    # membuat SQLAlchemy men-SELECT kolom itu dan endpoint /api/religions error 207.
 
     def __repr__(self):
         return f"<PMReligion {self.Religion}>"
@@ -26,5 +27,4 @@ class PMReligion(db.Model):
             "UpdDate": self.UpdDate.isoformat() if self.UpdDate else None,
             "UpdUser": self.UpdUser,
             "UpdFlag": self.UpdFlag,
-            "ExportDate": self.ExportDate.isoformat() if self.ExportDate else None,
         }

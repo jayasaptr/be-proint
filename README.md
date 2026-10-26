@@ -12,9 +12,11 @@ venv\Scripts\activate  # Windows
 # source venv/bin/activate  # Linux/Mac
 ```
 
-2. Install dependencies:
+2. Upgrade pip dulu (insiden CA eMudhra/emSign Okt 2026: pip < 26.2.2 membawa bundle certifi lama
+   sendiri, jadi update OS trust store saja tidak cukup), lalu install dependencies:
 
 ```bash
+python -m pip install --upgrade "pip>=26.2.2"
 pip install -r requirements.txt
 ```
 
